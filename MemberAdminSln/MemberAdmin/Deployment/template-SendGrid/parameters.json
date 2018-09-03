@@ -1,0 +1,45 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "value": "MemberShipMail"
+        },
+        "location": {
+            "value": "westeurope"
+        },
+        "plan_name": {
+            "value": "free"
+        },
+        "plan_publisher": {
+            "value": "Sendgrid"
+        },
+        "plan_product": {
+            "value": "sendgrid_azure"
+        },
+        "plan_promotion_code": {
+            "value": ""
+        },
+        "password": {
+            "value": "Demo123TT"
+        },
+        "email": {
+            "value": "toto_san@live.com"
+        },
+        "firstName": {
+            "value": "Thomas"
+        },
+        "lastName": {
+            "value": "Tomow"
+        },
+        "company": {
+            "value": ""
+        },
+        "website": {
+            "value": ""
+        },
+        "acceptMarketingEmails": {
+            "value": "0"
+        }
+    }
+}
