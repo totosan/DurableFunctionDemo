@@ -8,18 +8,18 @@ namespace MemberAdmin.Storage
 {
     public class ApprovalEntity:TableEntity
     {
-        public string EventName { get; }
 
-        public ApprovalEntity(OrchestrationParameter parameter, string approvalType, int challengeCode, string eventName)
+        public ApprovalEntity(string orchestrationId, string approvalType, int challengeCode, string eventName)
         {
-            this.EventName = eventName;
             this.PartitionKey = approvalType;
             this.RowKey = challengeCode.ToString();
-            this.OrchestrationId = parameter.OrchestrationId;
+            this.OrchestrationId = orchestrationId;
+            this.EventName = eventName;
         }
 
         public ApprovalEntity(){}
 
         public string OrchestrationId { get; set; }
+        public string EventName { get; set; }
     }
 }

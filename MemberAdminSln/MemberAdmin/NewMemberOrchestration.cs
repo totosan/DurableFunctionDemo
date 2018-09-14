@@ -24,19 +24,24 @@ using Twilio;
 
 namespace MemberAdmin
 {
+    [StorageAccount("AzureWebJobsStorage")]
     public static class PhoneVerification
     {
-        private const string EventName_EMail = "MailChallengeResponse";
-        private const string EventName_Sms = "SmsChallengeResponse";
+        private const string _eventNameEMail = "MailResponse";
+        private const string _eventNameSms = "SmsResponse";
+        private const int _expirationValue = 90;
 
-        [FunctionName("E4_SmsPhoneVerification")]
+        [FunctionName("O_EMailPhoneVerification")]
         public static async Task<bool> Run(
-            [OrchestrationTrigger] DurableOrchestrationContext context, ILogger log)
+            [OrchestrationTrigger] DurableOrchestrationContext context,
+            ILogger log)
         {
             string input = context.GetInput<string>();
             string orchestrationId = context.InstanceId;
 
-            log.LogInformation($"This ist the input value: {input}");
+            if (!context.IsReplaying)
+                log.LogInformation($"This ist the input value: {input}");
+
             var splitString = input.Split(',');
             if (splitString.Count() != 2)
             {
@@ -65,26 +70,26 @@ namespace MemberAdmin
             };
 
             var codes = new int[2];
-            //codes[0] = await context.CallActivityAsync<int>("E4_SendSmsChallenge", phoneParameter);
-            codes[1] = await context.CallActivityAsync<int>("E4_SendEmailChallenge", emailParameter);
+            //codes[0] = await context.CallActivityAsync<int>("A1_SendSmsChallenge", phoneParameter);
+            codes[1] = await context.CallActivityAsync<int>("A2_SendEmailChallenge", emailParameter);
 
             using (var timeoutCts = new CancellationTokenSource())
             {
-                // The user has 90 seconds to respond with the code they received in the SMS message.
-                DateTime expiration = context.CurrentUtcDateTime.AddSeconds(90);
+                // The user has 90 seconds to respond with the code they received in the SMS message or an eMail.
+                DateTime expiration = context.CurrentUtcDateTime.AddSeconds(_expirationValue);
                 Task timeoutTask = context.CreateTimer(expiration, timeoutCts.Token);
 
                 bool authorized = false;
                 for (int retryCount = 0; retryCount <= 3; retryCount++)
                 {
-                    Task<int> challengeSmsResponseTask = context.WaitForExternalEvent<int>(EventName_Sms);
-                    Task<int> challengeMailResponseTask = context.WaitForExternalEvent<int>(EventName_EMail);
+                    Task<int> smsResponseTask = context.WaitForExternalEvent<int>(_eventNameSms);
+                    Task<int> mailResponseTask = context.WaitForExternalEvent<int>(_eventNameEMail);
 
-                    Task winner = await Task.WhenAny(challengeSmsResponseTask, challengeMailResponseTask, timeoutTask);
+                    Task winner = await Task.WhenAny(smsResponseTask, mailResponseTask, timeoutTask);
                     if (winner != timeoutTask)
                     {
                         // We got back a response! Compare it to the challenge code.
-                        if (codes.Contains(challengeSmsResponseTask.Result))
+                        if (codes.Contains(((Task<int>)winner).Result))
                         {
                             authorized = true;
                             break;
@@ -107,7 +112,7 @@ namespace MemberAdmin
             }
         }
 
-        [FunctionName("E4_SendSmsChallenge")]
+        [FunctionName("A1_SendSmsChallenge")]
         public static int SendSmsChallenge(
             [ActivityTrigger] OrchestrationParameter phone,
             ILogger log,
@@ -134,9 +139,10 @@ namespace MemberAdmin
             return challengeCode;
         }
 
-        [FunctionName("E4_SendEmailChallenge")]
+        [FunctionName("A2_SendEmailChallenge")]
         public static async Task<int> SendEMailVerification(
             [ActivityTrigger]OrchestrationParameter eMail,
+            [Microsoft.Azure.WebJobs.Table("approval", "AzureWebJobsStorage")]CloudTable table,
             ILogger log, Microsoft.Azure.WebJobs.ExecutionContext context)
         {
             var config = new ConfigurationBuilder()
@@ -145,9 +151,8 @@ namespace MemberAdmin
                 .AddEnvironmentVariables()
                 .Build();
 
-            string uriFlow = config["Values:flowRESTTarget"];
-            string tableCnn = config["Values:AzureWebJobsStorage"];
-
+            string uriFlow = config["flowRESTTarget"];
+            log.LogInformation(config.ToString());
 
             // Get a random number generator with a random seed (not time-based)
             var rand = new Random(Guid.NewGuid().GetHashCode());
@@ -156,18 +161,19 @@ namespace MemberAdmin
             {
                 emailadress = eMail.Payload,
                 emailSubject = "Confirmation of membership - " + challengeCode,
-                emailBody = $"{Environment.GetEnvironmentVariable("WEBSITE_HOSTNAME")}/ApproveMemberByCode/api/approve/{challengeCode}"
+                emailBody = $"http://{Environment.GetEnvironmentVariable("WEBSITE_HOSTNAME")}/api/approve/{challengeCode}"
             };
+            var entity = new ApprovalEntity(eMail.OrchestrationId, "NewMember", challengeCode, _eventNameEMail);
+            log.LogInformation(SimpleJson.SimpleJson.SerializeObject(entity));
 
-            var table = await TableStorage.CreateTableIfNotExists(tableCnn, "approval");
-            var entity = new ApprovalEntity(eMail, "NewMember", challengeCode, EventName_EMail);
+
             var operation = TableOperation.Insert(entity);
             var result = await table.ExecuteAsync(operation);
-            if (result.HttpStatusCode != 200 || result.HttpStatusCode != 202)
-            {
-                throw new HttpRequestException(result.Result.ToString());
-            }
 
+            if (result.HttpStatusCode >= 300)
+            {
+                throw new HttpRequestException("HttpStatusCode of Tabel storage is " + result.HttpStatusCode);
+            }
 
             var client = new RestClient(uriFlow);
             var request = new RestRequest(Method.POST);

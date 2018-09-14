@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TestApp": {
+      "commandName": "Project",
+      "commandLineArgs": "-url https://demoflowfunctions.azurewebsites.net"
+    }
+  }
+}
