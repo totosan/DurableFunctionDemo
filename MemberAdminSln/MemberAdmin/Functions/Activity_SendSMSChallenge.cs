@@ -18,12 +18,12 @@ namespace MemberAdmin.Functions
 
 
         [FunctionName("A1_SendSmsChallenge")]
-        public static async Task<int> SendSmsChallenge(
+        public static int SendSmsChallenge(
             [ActivityTrigger] OrchestrationParameter phone,
             [Microsoft.Azure.WebJobs.Table("approval", "AzureWebJobsStorage")]CloudTable table,
             ILogger log,
             [TwilioSms(AccountSidSetting = "TwilioAccountSid", AuthTokenSetting = "TwilioAuthToken", From = "%TwilioPhoneNumber%")]
-            CreateMessageOptions message)
+            out CreateMessageOptions message)
         {
             // Get a random number generator with a random seed (not time-based)
             var rand = new Random(Guid.NewGuid().GetHashCode());
@@ -34,7 +34,7 @@ namespace MemberAdmin.Functions
             var entity = new ApprovalEntity(phone.OrchestrationId, "NewMember", challengeCode, EventNameSms);
             log.LogInformation(SimpleJson.SimpleJson.SerializeObject(entity));
 
-            await table.AddToTableStorageASync(entity);
+            table.AddToTableStorageASync(entity).GetAwaiter().GetResult();
             message = new CreateMessageOptions(new PhoneNumber(phone.Payload));
 
             message.Body = $"Your verification code is {challengeCode:0000}";
