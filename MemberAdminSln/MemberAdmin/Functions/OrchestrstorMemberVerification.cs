@@ -1,7 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the MIT License. See LICENSE in the project root for license information.
-
-using MemberAdmin.Models;
+﻿using MemberAdmin.Models;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using System;
@@ -13,12 +10,12 @@ using MemberAdmin.Functions;
 namespace MemberAdmin
 {
     [StorageAccount("AzureWebJobsStorage")]
-    public static class PhoneVerification
+    public static class OrchestrstorMemberVerification
     {
         private const int _expirationValue = 90;
 
         [FunctionName("O_EMailPhoneVerification")]
-        public static async Task<bool> Run(
+        public static async Task<object> Run(
             [OrchestrationTrigger] DurableOrchestrationContext context,
             ILogger log)
         {
@@ -43,21 +40,27 @@ namespace MemberAdmin
                     "A phone number input is required.");
             }
 
-            var phoneParameter = new OrchestrationParameter
+            var phoneParameter = new VerificationParameter
             {
                 OrchestrationId = orchestrationId,
                 Payload = phoneNumber
             };
 
-            var emailParameter = new OrchestrationParameter
+            var emailParameter = new VerificationParameter
             {
                 OrchestrationId = orchestrationId,
                 Payload = emailAddress
             };
 
-            var codes = new int[2];
-            codes[0] = await context.CallActivityAsync<int>("A1_SendSmsChallenge", phoneParameter);
-            codes[1] = await context.CallActivityAsync<int>("A2_SendEmailChallenge", emailParameter);
+            var fanOuts = new Task<ActivityResult>[2];
+            fanOuts[0]= context.CallActivityAsync<ActivityResult>("A1_SendSmsChallenge", phoneParameter);
+            fanOuts[1] = context.CallActivityAsync<ActivityResult>("A2_SendEmailChallenge", emailParameter);
+
+            var resultsAll = Task.WhenAll(fanOuts);
+            var resultList = resultsAll.Result.ToList();
+
+            var codes = resultList.Where(x => !x.HasError).Select(x=>(int)x.Value).ToList();
+            log.LogWarning($"There are errors on sending varification: {resultsAll.Result.Where(x=>x.HasError).Select(x=>x.Value)}");
 
             using (var timeoutCts = new CancellationTokenSource())
             {
@@ -68,6 +71,7 @@ namespace MemberAdmin
                 bool authorized = false;
                 for (int retryCount = 0; retryCount <= 3; retryCount++)
                 {
+                    context.SetCustomStatus(new{message=$"Retrynumber:{retryCount}"});
                     Task<int> smsResponseTask = context.WaitForExternalEvent<int>(Activity_SendSMSChallenge.EventNameSms);
                     Task<int> mailResponseTask = context.WaitForExternalEvent<int>(Activity_SendEMailChallenge.EventNameEMail);
 
@@ -94,7 +98,7 @@ namespace MemberAdmin
                     timeoutCts.Cancel();
                 }
 
-                return authorized;
+                return new {reason=input, isAuthorized=authorized};
             }
         }
 

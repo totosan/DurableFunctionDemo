@@ -1,16 +1,10 @@
-
-//using System.ComponentModel.DataAnnotations.Schema;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using MemberAdmin.Storage;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.WebJobs.Host;
-using Microsoft.Build.Framework;
 using Microsoft.WindowsAzure.Storage.Table;
+using System.Threading.Tasks;
 
 
 namespace MemberAdmin

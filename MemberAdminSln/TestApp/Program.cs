@@ -1,7 +1,9 @@
 ﻿using System;
-using System.Net.Http;
-using System.Net.Mime;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json.Linq;
 using RestSharp;
 
 namespace TestApp
@@ -17,37 +19,80 @@ namespace TestApp
                 return;
             }
 
-            var uri = args[1] + "/api";
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
+            IConfigurationRoot configuration = builder.Build();
+
+            var functionCode = configuration.GetSection("codes:fctCode").Value;
+
+            var uri = args[1]+ "/api";
+
+            try
+            {
+                MakeAsync(functionCode, uri).GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine(ex.Message);
+                Console.ReadKey();
+            }
+        }
+
+        private static async Task MakeAsync(string functionCode, string uri)
+        {
             var client = new RestClient(uri);
 
             Console.WriteLine("Starting call to orchestrator...");
 
-            IRestResponse response = SendFirstCall(client);
+            var response = await SendFirstCallAsync(client, functionCode);
 
             if (response.IsSuccessful)
             {
-                Console.WriteLine(response.Content);
+                var responseUrl =(SimpleJson.JsonObject )SimpleJson.SimpleJson.DeserializeObject(response.Content);
+
+                var restResponse = await GetStatus((string)responseUrl["statusQueryGetUri"]);
+                Console.WriteLine(restResponse.Content);
+
                 Console.WriteLine("Please enter the code: ");
                 var code = Console.ReadLine();
                 var respSecond = SendSecondCall(code, client, response.Content);
 
             }
+            else
+            {
+                Console.WriteLine("Error: "+response.Content);
+                Console.Write("Press any key!");
+                Console.ReadKey();
+            }
         }
 
 
-        private static IRestResponse SendFirstCall(RestClient client)
+        private static Task<IRestResponse> GetStatus(string url)
         {
-            var req1 = new RestRequest("orchestrators/E4_SmsPhoneVerification", Method.POST);
-            req1.AddHeader("x-functions-key", "lw3mEfy8zXlQj3cRnstiXqYkyJ5yzCz0eHrLTEcLvsp37dz9lbTH6Q==");
+            var client = new RestClient(url);
+            var req1 = new RestRequest(Method.GET);
+            req1.AddHeader("Cache-Control", "no-cache");
+            req1.AddHeader("Content-Type", "application/json");
+
+
+            IRestResponse response = client.Execute(req1);
+            return Task.FromResult(response);
+        }
+
+        private static Task<IRestResponse> SendFirstCallAsync(RestClient client, string functionCode)
+        {
+            var req1 = new RestRequest("orchestrators/O_EMailPhoneVerification", Method.POST);
+            req1.AddHeader("x-functions-key", functionCode);
             req1.AddHeader("Cache-Control", "no-cache");
             req1.AddHeader("Content-Type", "application/json");
 
             req1.AddParameter("undefined", SimpleJson.SimpleJson.SerializeObject("+4915153811045,toto_san@live.com"), ParameterType.RequestBody);
-            //req1.AddHeader("Postman-Token", "414d87e7-e9a1-4cc9-9501-c6db9c96f130");
 
             IRestResponse response = client.Execute(req1);
-            return response;
+            return Task.FromResult(response);
         }
 
         private static IRestResponse SendSecondCall(string code, RestClient client, string returnUris)
