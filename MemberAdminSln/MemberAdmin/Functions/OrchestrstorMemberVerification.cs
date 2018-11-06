@@ -57,11 +57,11 @@ namespace MemberAdmin
             fanOuts[0]= context.CallActivityAsync<ActivityResult>("A1_SendSmsChallenge", phoneParameter);
             fanOuts[1] = context.CallActivityAsync<ActivityResult>("A2_SendEmailChallenge", emailParameter);
 
-            var resultsAll = Task.WhenAll(fanOuts);
-            var resultList = resultsAll.Result.ToList();
+            var resultsAll = await Task.WhenAll(fanOuts);
+            var resultList = resultsAll.ToList();
 
             var codes = resultList.Where(x => !x.HasError).Select(x=>(int)x.Value).ToList();
-            log.LogWarning($"There are errors on sending varification: {resultsAll.Result.Where(x=>x.HasError).Select(x=>x.Value)}");
+            log.LogWarning($"There are errors on sending varification: {resultsAll.Where(x=>x.HasError).Select(x=>x.Value)}");
 
             using (var timeoutCts = new CancellationTokenSource())
             {
