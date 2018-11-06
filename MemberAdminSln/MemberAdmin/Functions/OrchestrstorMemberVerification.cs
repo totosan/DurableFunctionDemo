@@ -52,6 +52,7 @@ namespace MemberAdmin
                 Payload = emailAddress
             };
 
+
             var fanOuts = new Task<ActivityResult>[2];
             fanOuts[0]= context.CallActivityAsync<ActivityResult>("A1_SendSmsChallenge", phoneParameter);
             fanOuts[1] = context.CallActivityAsync<ActivityResult>("A2_SendEmailChallenge", emailParameter);

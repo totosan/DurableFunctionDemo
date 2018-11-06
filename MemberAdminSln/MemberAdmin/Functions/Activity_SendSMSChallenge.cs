@@ -40,9 +40,7 @@ namespace MemberAdmin.Functions
             }
             catch (Exception ex)
             {
-                message = new CreateMessageOptions(new PhoneNumber(phone.Payload));
-                message.Body = $"Your verification cannot be obtained, because of an error. (Tell Admin:-))";
-
+                message = null;
                 return new ActivityResult { HasError=true, Value = ex.Message};
             }
         }
