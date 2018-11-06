@@ -53,7 +53,9 @@ namespace TestApp
             {
                 var responseUrl =(SimpleJson.JsonObject )SimpleJson.SimpleJson.DeserializeObject(response.Content);
 
-                var restResponse = await GetStatus((string)responseUrl["statusQueryGetUri"]);
+                var url = (string)responseUrl["statusQueryGetUri"];
+                var restResponse = await GetStatus(url);
+                Console.WriteLine(url);
                 Console.WriteLine(restResponse.Content);
 
                 Console.WriteLine("Please enter the code: ");

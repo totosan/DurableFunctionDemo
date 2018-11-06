@@ -25,8 +25,17 @@ namespace MemberAdmin
             if (tabresult.Result != null)
             {
                 var approvalEntity = (ApprovalEntity)tabresult.Result;
-                await client.RaiseEventAsync(approvalEntity.OrchestrationId, approvalEntity.EventName, int.Parse(code));
-                return new OkResult();
+                var status = await client.GetStatusAsync(approvalEntity.OrchestrationId);
+                if (status.RuntimeStatus == OrchestrationRuntimeStatus.Pending)
+                {
+                    await client.RaiseEventAsync(approvalEntity.OrchestrationId, approvalEntity.EventName,
+                        int.Parse(code));
+                    return new OkResult();
+                }
+                else
+                {
+                    return new NotFoundResult();
+                }
             }
             else
             {
