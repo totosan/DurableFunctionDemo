@@ -18,20 +18,24 @@ namespace TestApp
                 Console.WriteLine("Usage: TestApp.exe -uri <URI>");
                 return;
             }
+			var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+			var builder = new ConfigurationBuilder()
+				.SetBasePath(Directory.GetCurrentDirectory())
+				.AddJsonFile($"appsettings.json", optional: false, reloadOnChange: true)
+				.AddJsonFile($"appsettings.{environmentName}.json", optional: true, reloadOnChange: true)
+				.AddEnvironmentVariables();
 
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-
-            IConfigurationRoot configuration = builder.Build();
+			IConfigurationRoot configuration = builder.Build();
 
             var functionCode = configuration.GetSection("codes:fctCode").Value;
+			var userdataPhone = configuration.GetSection("userdata:phonenr").Value;
+			var userdataEmail = configuration.GetSection("userdata:email").Value;
 
             var uri = args[1]+ "/api";
 
             try
             {
-                MakeAsync(functionCode, uri).GetAwaiter().GetResult();
+                MakeAsync(functionCode, uri, $"{userdataPhone},{userdataEmail}").GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -41,17 +45,17 @@ namespace TestApp
             }
         }
 
-        private static async Task MakeAsync(string functionCode, string uri)
+        private static async Task MakeAsync(string functionCode, string uri, string usersData)
         {
             var client = new RestClient(uri);
 
             Console.WriteLine("Starting call to orchestrator...");
 
-            var response = await SendFirstCallAsync(client, functionCode);
+            var response = await SendFirstCallAsync(client, functionCode, usersData);
 
             if (response.IsSuccessful)
             {
-                var responseUrl =(SimpleJson.JsonObject )SimpleJson.SimpleJson.DeserializeObject(response.Content);
+                var responseUrl =(SimpleJson.JsonObject)SimpleJson.SimpleJson.DeserializeObject(response.Content);
 
                 var url = (string)responseUrl["statusQueryGetUri"];
                 var restResponse = await GetStatus(url);
@@ -60,7 +64,7 @@ namespace TestApp
 
                 Console.WriteLine("Please enter the code: ");
                 var code = Console.ReadLine();
-                var respSecond = SendSecondCall(code, client, response.Content);
+                var respSecond = SendSecondCall(code, uri.Replace("/api",""), response.Content);
 
             }
             else
@@ -84,23 +88,23 @@ namespace TestApp
             return Task.FromResult(response);
         }
 
-        private static Task<IRestResponse> SendFirstCallAsync(RestClient client, string functionCode)
+        private static Task<IRestResponse> SendFirstCallAsync(RestClient client, string functionCode, string usersData)
         {
             var req1 = new RestRequest("orchestrators/O_EMailPhoneVerification", Method.POST);
             req1.AddHeader("x-functions-key", functionCode);
             req1.AddHeader("Cache-Control", "no-cache");
             req1.AddHeader("Content-Type", "application/json");
 
-            req1.AddParameter("undefined", SimpleJson.SimpleJson.SerializeObject("+4915153811045,toto_san@live.com"), ParameterType.RequestBody);
+            req1.AddParameter("undefined", SimpleJson.SimpleJson.SerializeObject(usersData), ParameterType.RequestBody);
 
             IRestResponse response = client.Execute(req1);
             return Task.FromResult(response);
         }
 
-        private static IRestResponse SendSecondCall(string code, RestClient client, string returnUris)
+        private static IRestResponse SendSecondCall(string code,string uri, string returnUris)
         {
-            var responseUrl = SimpleJson.SimpleJson.DeserializeObject(returnUris);
-            var req1 = new RestRequest("approve/{code}", Method.POST);
+			RestClient client = new RestClient();
+			var req1 = new RestRequest(uri+"/approve/{code}", Method.GET);
             req1.AddUrlSegment("code", code);
             req1.AddHeader("Cache-Control", "no-cache");
             //req1.AddHeader("Content-Type", "application/json");
