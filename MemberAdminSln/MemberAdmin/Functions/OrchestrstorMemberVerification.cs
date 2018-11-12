@@ -68,7 +68,7 @@ namespace MemberAdmin
 			}
 			var resultList = resultsAll.Result.ToList();
 
-			var codes = resultList.Where(x => !x.HasError).Select(x => (int)x.Value).ToList();
+			var codes = resultList.Where(x => !x.HasError).Select(x => (Int64)x.Value).ToList();
 			log.LogWarning($"There are errors on sending varification: {resultsAll.Result.Where(x => x.HasError).Select(x => x.Value)}");
 			context.SetCustomStatus(new { Codes = codes });
 
