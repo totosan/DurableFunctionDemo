@@ -71,9 +71,9 @@ namespace MemberAdmin
                 {
                     resultList.Add(await task);
                 }
-                catch (Exception ex)
+                catch (AggregateException ex)
                 {
-                    log.LogError($"############   Exception: {task.Exception}");
+                    log.LogError($"############   Exception: {task.Exception?.Message}");
                 }
             }).ToList();
             await Task.WhenAll(tasks);

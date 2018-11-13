@@ -9,6 +9,11 @@ using System.Threading.Tasks;
 
 namespace MemberAdmin
 {
+    /*
+     * On time writing this Approval method, the Azure Table Storage binding was not fully implemented
+     * So I used direct access to  Table.
+     *
+     */
     public static class Approval
     {
         [FunctionName("ApproveMemberByChallengeCode")]
@@ -18,7 +23,7 @@ namespace MemberAdmin
             [Table("approval", Connection = "AzureWebJobsStorage")] CloudTable table,
             string code)
         {
-
+            
             var ops = TableOperation.Retrieve<ApprovalEntity>("NewMember", code);
             var tabresult = await table.ExecuteAsync(ops);
 
