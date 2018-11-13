@@ -1,5 +1,6 @@
 # Demonstration of Azure Durable Functions
 
+
 **Azure Durabel Function explained be example**
 This project contains sample code for demonstrating, how Azure durabel functions are working.
 The scenario is a registration of a membership, that should be varified by eMail or SMS.
@@ -15,8 +16,10 @@ If a timout occured, the whole registration process becomes obsolete.
 ## Getting Started
 
 Download this code and check, that everything is installed, as needed.
+
 Also see the presentation, I created for a talk in Hamburg, if you try to get a quick overview and an understanding of that topic.
 [Slidedeck](https://github.com/totosan/DurableFunctionDemo/blob/master/Presentation%20slides/DurableFunctions.pdf)
+
 ### Prerequisites
 
 

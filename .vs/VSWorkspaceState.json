@@ -1,0 +1,12 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\MemberAdminSln",
+    "\\MemberAdminSln\\MemberAdmin",
+    "\\MemberAdminSln\\MemberAdmin\\Deployment",
+    "\\MemberAdminSln\\MemberAdmin\\Deployment\\template",
+    "\\MemberAdminSln\\TestApp"
+  ],
+  "SelectedNode": "\\MemberAdminSln\\TestApp\\Program.cs",
+  "PreviewInSolutionExplorer": false
+}
