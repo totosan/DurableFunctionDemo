@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "TestApp": {
+      "commandName": "Project",
+      "commandLineArgs": "-url https://demoflowfunctions.azurewebsites.net"
+    },
+    "Local": {
+      "commandName": "Project",
+      "commandLineArgs": "-url http://localhost:7071"
+    }
+  }
+}

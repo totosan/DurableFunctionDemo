@@ -9,6 +9,6 @@
     }
   },
   "durableTask": {
-    "HubName": "SampleHubVS"
+    "HubName": "DurableFunctionsHubVS"
   }
 }

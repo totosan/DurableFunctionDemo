@@ -11,9 +11,9 @@ using Microsoft.Extensions.Logging;
 
 namespace MemberAdmin
 {
-    public static class HttpStart
+    public static class OrchestrationStart
     {
-        [FunctionName("HttpStart")]
+        [FunctionName("OrchestrationStart")]
         public static async Task<HttpResponseMessage> Run(
             [HttpTrigger(AuthorizationLevel.Function, methods: "post", Route = "orchestrators/{functionName}")] HttpRequestMessage req,
             [OrchestrationClient] DurableOrchestrationClientBase starter,
