@@ -26,7 +26,7 @@ namespace MemberAdmin
             {
                 var approvalEntity = (ApprovalEntity)tabresult.Result;
                 var status = await client.GetStatusAsync(approvalEntity.OrchestrationId);
-                if (status.RuntimeStatus == OrchestrationRuntimeStatus.Pending)
+                if (status.RuntimeStatus == OrchestrationRuntimeStatus.Running)
                 {
                     await client.RaiseEventAsync(approvalEntity.OrchestrationId, approvalEntity.EventName,
                         int.Parse(code));
