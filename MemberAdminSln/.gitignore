@@ -25,8 +25,8 @@ bld/
 [Ll]og/
 
 #Visual Studio Folder
-.vs
-.vs/*
+*/.vs
+.vs/
 
 # Visual Studio 2015 cache/options directory
 .vs/
